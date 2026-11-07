@@ -60,6 +60,10 @@ services:
       PROVEDOR_CLIENT_ID: oficina-financeiro
       PROVEDOR_CLIENT_SECRET: mock-local-secret
       RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: 5672
+      RABBITMQ_USERNAME: oficina
+      RABBITMQ_PASSWORD: oficina-local
+      FINANCEIRO_API_KEY: financeiro-local-key
     depends_on:
       postgres-financeiro:
         condition: service_healthy

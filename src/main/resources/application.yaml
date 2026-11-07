@@ -1,10 +1,15 @@
 spring:
+  profiles:
+    active: local,rabbit
+
   application:
     name: financeiro-api
+
   datasource:
     url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:15435/oficina_financeiro_db}
     username: ${SPRING_DATASOURCE_USERNAME:financeiro_app}
     password: ${SPRING_DATASOURCE_PASSWORD}
+
   jpa:
     open-in-view: false
     hibernate:
