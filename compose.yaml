@@ -1,0 +1,74 @@
+name: oficina-financeiro
+
+services:
+  postgres-financeiro:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: oficina_financeiro_db
+      POSTGRES_USER: financeiro_app
+      POSTGRES_PASSWORD: financeiro-local
+    ports:
+      - "127.0.0.1:15435:5432"
+    volumes:
+      - financeiro_pg_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U financeiro_app -d oficina_financeiro_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  provedor-mock:
+    build: ./mock
+    environment:
+      PROVEDOR_CLIENT_ID: oficina-financeiro
+      PROVEDOR_CLIENT_SECRET: mock-local-secret
+      MOCK_ADMIN_KEY: mock-admin-local
+    ports:
+      - "127.0.0.1:8090:8090"
+    volumes:
+      - financeiro_mock_data:/data
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8090/health')"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  rabbitmq:
+    image: rabbitmq:4.1-management
+    environment:
+      RABBITMQ_DEFAULT_USER: oficina
+      RABBITMQ_DEFAULT_PASS: oficina-local
+    ports:
+      - "127.0.0.1:5673:5672"
+      - "127.0.0.1:15673:15672"
+    volumes:
+      - financeiro_rabbit_data:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  api:
+    build: .
+    ports:
+      - "127.0.0.1:8082:8082"
+    environment:
+      SPRING_PROFILES_ACTIVE: local,rabbit
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres-financeiro:5432/oficina_financeiro_db
+      PROVEDOR_URL: http://provedor-mock:8090
+      PROVEDOR_CLIENT_ID: oficina-financeiro
+      PROVEDOR_CLIENT_SECRET: mock-local-secret
+      RABBITMQ_HOST: rabbitmq
+    depends_on:
+      postgres-financeiro:
+        condition: service_healthy
+      provedor-mock:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+
+volumes:
+  financeiro_pg_data:
+  financeiro_mock_data:
+  financeiro_rabbit_data:

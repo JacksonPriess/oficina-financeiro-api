@@ -1,0 +1,45 @@
+name: CI Financeiro
+
+on:
+  pull_request:
+  push:
+    branches: [main, feature/fase4]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  testes:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: oficina_financeiro_test
+          POSTGRES_USER: financeiro_test
+          POSTGRES_PASSWORD: test-only
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U financeiro_test -d oficina_financeiro_test"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      FINANCEIRO_INTEGRATION_TESTS: 'true'
+      SPRING_DATASOURCE_URL: jdbc:postgresql://localhost:5432/oficina_financeiro_test
+      SPRING_DATASOURCE_USERNAME: financeiro_test
+      SPRING_DATASOURCE_PASSWORD: test-only
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Testar mock
+        run: python3 -m unittest discover -s tests/mock -v
+      - name: Testar e empacotar financeiro
+        run: sh mvnw -B verify
