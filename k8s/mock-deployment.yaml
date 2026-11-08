@@ -1,0 +1,77 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: provedor-mock
+  labels:
+    app: provedor-mock
+    app.kubernetes.io/part-of: oficina-financeiro
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  progressDeadlineSeconds: 900
+  selector:
+    matchLabels:
+      app: provedor-mock
+  template:
+    metadata:
+      labels:
+        app: provedor-mock
+        app.kubernetes.io/part-of: oficina-financeiro
+    spec:
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+        fsGroupChangePolicy: OnRootMismatch
+      containers:
+        - name: provedor-mock
+          image: oficina-provedor-mock
+          ports:
+            - name: http
+              containerPort: 8090
+          env:
+            - name: MOCK_DB
+              value: /data/mock.db
+            - name: PROVEDOR_CLIENT_ID
+              valueFrom:
+                configMapKeyRef:
+                  name: financeiro-api-config
+                  key: PROVEDOR_CLIENT_ID
+          envFrom:
+            - secretRef:
+                name: provedor-mock-secret
+          volumeMounts:
+            - name: data
+              mountPath: /data
+          startupProbe:
+            httpGet:
+              path: /health
+              port: http
+            periodSeconds: 5
+            failureThreshold: 24
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: http
+            periodSeconds: 10
+            timeoutSeconds: 3
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: http
+            periodSeconds: 20
+            timeoutSeconds: 3
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 250m
+              memory: 128Mi
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: provedor-mock-data

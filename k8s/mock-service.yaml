@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: provedor-mock
+  labels:
+    app: provedor-mock
+spec:
+  type: ClusterIP
+  selector:
+    app: provedor-mock
+  ports:
+    - name: http
+      port: 8090
+      targetPort: http

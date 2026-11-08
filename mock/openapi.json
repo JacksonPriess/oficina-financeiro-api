@@ -1,0 +1,725 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Provedor Mock — Oficina",
+    "version": "v1",
+    "description": "Simulação didática, sem vínculo com Mercado Pago. 1) Execute /oauth/token. 2) Copie access_token para Authorize → ProvedorBearer (sem escrever Bearer). 3) Para aprovar, configure MockAdminKey. Credenciais de exemplo são somente locais."
+  },
+  "servers": [
+    {
+      "url": "/"
+    }
+  ],
+  "tags": [
+    {
+      "name": "Autenticação",
+      "description": "Token do provedor"
+    },
+    {
+      "name": "Pagamentos",
+      "description": "Cobranças simuladas"
+    },
+    {
+      "name": "Simulação",
+      "description": "Aprovação manual exclusiva do laboratório"
+    }
+  ],
+  "components": {
+    "securitySchemes": {
+      "ProvedorBearer": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "Token opaco obtido em /oauth/token; não é o JWT do núcleo."
+      },
+      "MockAdminKey": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "X-Mock-Admin-Key",
+        "description": "Chave local de simulação: mock-admin-local"
+      }
+    }
+  },
+  "paths": {
+    "/oauth/token": {
+      "post": {
+        "summary": "Obter token",
+        "description": "",
+        "tags": [
+          "Autenticação"
+        ],
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "access_token": {
+                      "type": "string"
+                    },
+                    "token_type": {
+                      "type": "string",
+                      "example": "Bearer"
+                    },
+                    "expires_in": {
+                      "type": "integer",
+                      "example": 300
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Solicitação recusada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "mensagem": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Solicitação recusada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "mensagem": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Solicitação recusada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "mensagem": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Solicitação recusada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "mensagem": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "client_id": {
+                    "type": "string",
+                    "example": "oficina-financeiro"
+                  },
+                  "client_secret": {
+                    "type": "string",
+                    "format": "password",
+                    "example": "mock-local-secret"
+                  }
+                },
+                "required": [
+                  "client_id",
+                  "client_secret"
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    "/pagamentos": {
+      "post": {
+        "summary": "Criar pagamento pendente",
+        "description": "Repetir a mesma chave e os mesmos dados retorna o pagamento existente.",
+        "tags": [
+          "Pagamentos"
+        ],
+        "security": [
+          {
+            "ProvedorBearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "referencia": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "valor": {
+                      "type": "string",
+                      "example": "250.50"
+                    },
+                    "moeda": {
+                      "type": "string",
+                      "enum": [
+                        "BRL"
+                      ]
+                    },
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "PENDENTE",
+                        "APROVADO"
+                      ]
+                    },
+                    "estornoId": {
+                      "type": "string",
+                      "nullable": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Solicitação recusada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "mensagem": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Solicitação recusada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "mensagem": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Solicitação recusada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "mensagem": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Solicitação recusada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "mensagem": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "referencia": {
+                    "type": "string",
+                    "format": "uuid",
+                    "example": "b1000000-0000-4000-8000-000000000001"
+                  },
+                  "osId": {
+                    "type": "integer",
+                    "format": "int64",
+                    "minimum": 1,
+                    "example": 1
+                  },
+                  "valor": {
+                    "type": "number",
+                    "minimum": 0.01,
+                    "multipleOf": 0.01,
+                    "example": 250.5
+                  },
+                  "moeda": {
+                    "type": "string",
+                    "enum": [
+                      "BRL"
+                    ]
+                  }
+                },
+                "required": [
+                  "referencia",
+                  "osId",
+                  "valor",
+                  "moeda"
+                ]
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "example": "b1000000-0000-4000-8000-000000000001"
+            }
+          }
+        ]
+      }
+    },
+    "/pagamentos/{id}": {
+      "get": {
+        "summary": "Consultar pagamento",
+        "description": "",
+        "tags": [
+          "Pagamentos"
+        ],
+        "security": [
+          {
+            "ProvedorBearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "referencia": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "valor": {
+                      "type": "string",
+                      "example": "250.50"
+                    },
+                    "moeda": {
+                      "type": "string",
+                      "enum": [
+                        "BRL"
+                      ]
+                    },
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "PENDENTE",
+                        "APROVADO"
+                      ]
+                    },
+                    "estornoId": {
+                      "type": "string",
+                      "nullable": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Solicitação recusada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "mensagem": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Solicitação recusada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "mensagem": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Solicitação recusada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "mensagem": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Solicitação recusada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "mensagem": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ]
+      }
+    },
+    "/pagamentos/{id}/estornos": {
+      "post": {
+        "summary": "Estornar pagamento aprovado",
+        "description": "Somente estorno integral. O status histórico continua APROVADO; estornoId registra a reversão.",
+        "tags": [
+          "Pagamentos"
+        ],
+        "security": [
+          {
+            "ProvedorBearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "pagamentoId": {
+                      "type": "string",
+                      "format": "uuid"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Solicitação recusada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "mensagem": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Solicitação recusada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "mensagem": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Solicitação recusada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "mensagem": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Solicitação recusada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "mensagem": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "valor": {
+                    "type": "number",
+                    "example": 250.5,
+                    "minimum": 0.01
+                  }
+                },
+                "required": [
+                  "valor"
+                ]
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "example": "estorno:b1000000-0000-4000-8000-000000000001"
+            }
+          }
+        ]
+      }
+    },
+    "/simulacao/pagamentos/{id}/aprovar": {
+      "post": {
+        "summary": "Simular aprovação",
+        "description": "",
+        "tags": [
+          "Simulação"
+        ],
+        "security": [
+          {
+            "MockAdminKey": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "referencia": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "valor": {
+                      "type": "string",
+                      "example": "250.50"
+                    },
+                    "moeda": {
+                      "type": "string",
+                      "enum": [
+                        "BRL"
+                      ]
+                    },
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "PENDENTE",
+                        "APROVADO"
+                      ]
+                    },
+                    "estornoId": {
+                      "type": "string",
+                      "nullable": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Solicitação recusada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "mensagem": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Solicitação recusada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "mensagem": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Solicitação recusada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "mensagem": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Solicitação recusada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "mensagem": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ]
+      }
+    }
+  }
+}

@@ -1,0 +1,9 @@
+spring:
+  datasource:
+    password: ${SPRING_DATASOURCE_PASSWORD:financeiro-local}
+
+financeiro:
+  security:
+    api-key: ${FINANCEIRO_API_KEY:financeiro-local-key}
+  provedor:
+    client-secret: ${PROVEDOR_CLIENT_SECRET:mock-local-secret}

@@ -31,3 +31,8 @@ build/
 
 ### VS Code ###
 .vscode/
+
+# Artefatos locais de teste
+__pycache__/
+*.pyc
+*.db

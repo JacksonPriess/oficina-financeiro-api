@@ -1,0 +1,5 @@
+.git
+target
+mock
+tests
+*.zip

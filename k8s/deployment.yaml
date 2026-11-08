@@ -1,0 +1,92 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: financeiro-api
+  labels:
+    app: financeiro-api
+    app.kubernetes.io/part-of: oficina-financeiro
+spec:
+  replicas: 1
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 0
+      maxUnavailable: 1
+  progressDeadlineSeconds: 900
+  selector:
+    matchLabels:
+      app: financeiro-api
+  template:
+    metadata:
+      labels:
+        app: financeiro-api
+        app.kubernetes.io/part-of: oficina-financeiro
+    spec:
+      automountServiceAccountToken: false
+      terminationGracePeriodSeconds: 45
+      containers:
+        - name: financeiro-api
+          image: oficina-financeiro-api
+          ports:
+            - name: http
+              containerPort: 8082
+          envFrom:
+            - configMapRef:
+                name: financeiro-api-config
+            - secretRef:
+                name: financeiro-database-secret
+          env:
+            - name: FINANCEIRO_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: financeiro-api-secret
+                  key: FINANCEIRO_API_KEY
+            - name: PROVEDOR_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: provedor-mock-secret
+                  key: PROVEDOR_CLIENT_SECRET
+            - name: RABBITMQ_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: rabbitmq-secret
+                  key: username
+            - name: RABBITMQ_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: rabbitmq-secret
+                  key: password
+          startupProbe:
+            exec:
+              command:
+                - sh
+                - -c
+                - 'wget -q -T 3 -O /dev/null --header="X-API-Key: $FINANCEIRO_API_KEY" http://127.0.0.1:8082/actuator/health/liveness'
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 60
+          readinessProbe:
+            exec:
+              command:
+                - sh
+                - -c
+                - 'wget -q -T 3 -O /dev/null --header="X-API-Key: $FINANCEIRO_API_KEY" http://127.0.0.1:8082/actuator/health/readiness'
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          livenessProbe:
+            exec:
+              command:
+                - sh
+                - -c
+                - 'wget -q -T 3 -O /dev/null --header="X-API-Key: $FINANCEIRO_API_KEY" http://127.0.0.1:8082/actuator/health/liveness'
+            periodSeconds: 20
+            timeoutSeconds: 5
+            failureThreshold: 3
+          resources:
+            requests:
+              cpu: 250m
+              memory: 512Mi
+            limits:
+              cpu: 500m
+              memory: 1Gi
