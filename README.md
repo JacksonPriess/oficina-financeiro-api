@@ -524,6 +524,8 @@ O projeto adota alguns princípios importantes para sistemas distribuídos:
 
 ## 14. Documentação complementar
 
+O [guia de deploy no EKS](docs/deploy-eks.md) descreve os pré-requisitos, os Secrets e a validação da API financeira e do mock no cluster.
+
 A documentação da arquitetura distribuída completa, incluindo a Saga de ponta a ponta, pertence ao projeto principal da Oficina Dinoco.
 
 Este repositório concentra a documentação do domínio financeiro, seus contratos, sua persistência e suas integrações.

@@ -1,4 +1,4 @@
-name: CI Financeiro
+name: CI/CD Financeiro
 
 on:
   pull_request:
@@ -8,6 +8,10 @@ on:
 
 permissions:
   contents: read
+
+concurrency:
+  group: financeiro-${{ github.ref }}
+  cancel-in-progress: false
 
 jobs:
   testes:
@@ -41,5 +45,68 @@ jobs:
           python-version: '3.12'
       - name: Testar mock
         run: python3 -m unittest discover -s tests/mock -v
+      - name: Validar manifests e script de deploy
+        run: |
+          python3 -m py_compile scripts/deploy-k8s.py
+          kubectl kustomize k8s > /dev/null
       - name: Testar e empacotar financeiro
         run: sh mvnw -B verify
+
+  deploy:
+    name: Publicar imagens e implantar no EKS
+    needs: testes
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      AWS_REGION: us-east-1
+      EKS_CLUSTER_NAME: oficina-api-dev-cluster
+      K8S_NAMESPACE: default
+      FINANCEIRO_ECR_REPOSITORY: oficina-financeiro-dev-repo
+      MOCK_ECR_REPOSITORY: oficina-provedor-mock-dev-repo
+      IMAGE_TAG: ${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configurar credenciais AWS
+        uses: aws-actions/configure-aws-credentials@v6
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Verificar pré-requisitos
+        env:
+          FINANCEIRO_API_KEY: ${{ secrets.FINANCEIRO_API_KEY }}
+          PROVEDOR_CLIENT_SECRET: ${{ secrets.PROVEDOR_CLIENT_SECRET }}
+          MOCK_ADMIN_KEY: ${{ secrets.MOCK_ADMIN_KEY }}
+        run: |
+          aws eks update-kubeconfig --region "$AWS_REGION" --name "$EKS_CLUSTER_NAME"
+          aws ecr describe-repositories --region "$AWS_REGION" \
+            --repository-names "$FINANCEIRO_ECR_REPOSITORY" "$MOCK_ECR_REPOSITORY" \
+            --query 'repositories[].repositoryName' --output text
+          python3 scripts/deploy-k8s.py preflight
+
+      - name: Login no Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Publicar imagens da API e do mock
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+        run: |
+          FINANCEIRO_IMAGE="$ECR_REGISTRY/$FINANCEIRO_ECR_REPOSITORY:$IMAGE_TAG"
+          MOCK_IMAGE="$ECR_REGISTRY/$MOCK_ECR_REPOSITORY:$IMAGE_TAG"
+          docker build -t "$FINANCEIRO_IMAGE" .
+          docker build -t "$MOCK_IMAGE" mock
+          docker push "$FINANCEIRO_IMAGE"
+          docker push "$MOCK_IMAGE"
+
+      - name: Implantar API e mock no EKS
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          FINANCEIRO_API_KEY: ${{ secrets.FINANCEIRO_API_KEY }}
+          PROVEDOR_CLIENT_SECRET: ${{ secrets.PROVEDOR_CLIENT_SECRET }}
+          MOCK_ADMIN_KEY: ${{ secrets.MOCK_ADMIN_KEY }}
+        run: python3 scripts/deploy-k8s.py deploy
