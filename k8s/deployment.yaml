@@ -36,6 +36,11 @@ spec:
             - secretRef:
                 name: financeiro-database-secret
           env:
+            - name: NEW_RELIC_LICENSE_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: financeiro-api-secret
+                  key: NEW_RELIC_LICENSE_KEY
             - name: FINANCEIRO_API_KEY
               valueFrom:
                 secretKeyRef:

@@ -1,10 +1,15 @@
-name: CI/CD Financeiro
+name: CI/CD Pipeline - Financeiro
 
 on:
   pull_request:
-  push:
-    branches: [main, feature/fase4]
+    branches:
+      - main
+
   workflow_dispatch:
+
+  push:
+    branches:
+      - main
 
 permissions:
   contents: read
@@ -14,6 +19,9 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  # ============================================================
+  # CI
+  # ============================================================
   testes:
     runs-on: ubuntu-latest
     services:
@@ -34,24 +42,35 @@ jobs:
       SPRING_DATASOURCE_USERNAME: financeiro_test
       SPRING_DATASOURCE_PASSWORD: test-only
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-java@v4
+      - name: Checkout do código
+        uses: actions/checkout@v4
+
+      - name: Configurar Java 21
+        uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '21'
           cache: maven
-      - uses: actions/setup-python@v5
+
+      - name: Configurar Python 3.12
+        uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-      - name: Testar mock
+
+      - name: Executar testes do provedor mock
         run: python3 -m unittest discover -s tests/mock -v
-      - name: Validar manifests e script de deploy
+
+      - name: Validar configuração de deploy
         run: |
           python3 -m py_compile scripts/deploy-k8s.py
           kubectl kustomize k8s > /dev/null
-      - name: Testar e empacotar financeiro
+
+      - name: Executar testes e empacotar aplicação
         run: sh mvnw -B verify
 
+  # ============================================================
+  # CD
+  # ============================================================
   deploy:
     name: Publicar imagens e implantar no EKS
     needs: testes
@@ -66,7 +85,8 @@ jobs:
       MOCK_ECR_REPOSITORY: oficina-provedor-mock-dev-repo
       IMAGE_TAG: ${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout do código
+        uses: actions/checkout@v4
 
       - name: Configurar credenciais AWS
         uses: aws-actions/configure-aws-credentials@v6
@@ -76,9 +96,10 @@ jobs:
           aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
           aws-region: ${{ env.AWS_REGION }}
 
-      - name: Verificar pr�-requisitos
+      - name: Configurar acesso ao EKS e verificar pré-requisitos
         env:
           FINANCEIRO_API_KEY: ${{ secrets.FINANCEIRO_API_KEY }}
+          NEW_RELIC_LICENSE_KEY: ${{ secrets.NEW_RELIC_LICENSE_KEY }}
           PROVEDOR_CLIENT_SECRET: ${{ secrets.PROVEDOR_CLIENT_SECRET }}
           MOCK_ADMIN_KEY: ${{ secrets.MOCK_ADMIN_KEY }}
         run: |
@@ -88,11 +109,11 @@ jobs:
             --query 'repositories[].repositoryName' --output text
           python3 scripts/deploy-k8s.py preflight
 
-      - name: Login no Amazon ECR
+      - name: Autenticar no Amazon ECR
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v2
 
-      - name: Publicar imagens da API e do mock
+      - name: Publicar imagens no Amazon ECR
         env:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
         run: |
@@ -103,10 +124,11 @@ jobs:
           docker push "$FINANCEIRO_IMAGE"
           docker push "$MOCK_IMAGE"
 
-      - name: Implantar API e mock no EKS
+      - name: Implantar no Amazon EKS
         env:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
           FINANCEIRO_API_KEY: ${{ secrets.FINANCEIRO_API_KEY }}
+          NEW_RELIC_LICENSE_KEY: ${{ secrets.NEW_RELIC_LICENSE_KEY }}
           PROVEDOR_CLIENT_SECRET: ${{ secrets.PROVEDOR_CLIENT_SECRET }}
           MOCK_ADMIN_KEY: ${{ secrets.MOCK_ADMIN_KEY }}
         run: python3 scripts/deploy-k8s.py deploy
