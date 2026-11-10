@@ -12,7 +12,7 @@ import tempfile
 ROOT = Path(__file__).resolve().parents[1]
 NAMESPACE = os.environ.get("K8S_NAMESPACE", "default")
 DEPLOYMENTS = ("provedor-mock", "financeiro-api")
-CREDENTIALS = ("FINANCEIRO_API_KEY", "PROVEDOR_CLIENT_SECRET", "MOCK_ADMIN_KEY")
+CREDENTIALS = ("FINANCEIRO_API_KEY", "PROVEDOR_CLIENT_SECRET", "MOCK_ADMIN_KEY", "NEW_RELIC_LICENSE_KEY")
 
 
 def kubectl(*args, capture=False, payload=None):
@@ -94,7 +94,7 @@ def deploy():
     required("IMAGE_TAG")
     for name in CREDENTIALS:
         required(name)
-    apply_secret("financeiro-api-secret", ("FINANCEIRO_API_KEY",))
+    apply_secret("financeiro-api-secret", ("FINANCEIRO_API_KEY", "NEW_RELIC_LICENSE_KEY"))
     apply_secret("provedor-mock-secret", ("PROVEDOR_CLIENT_SECRET", "MOCK_ADMIN_KEY"))
     apply_manifests()
     try:

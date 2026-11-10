@@ -1,0 +1,22 @@
+# This file configures the New Relic agent.
+common: &default_settings
+
+  app_name: ${NEW_RELIC_APP_NAME}
+
+  license_key: ${NEW_RELIC_LICENSE_KEY}
+
+  log:
+    level: info
+    file_name: STDOUT
+
+  distributed_tracing:
+    enabled: true
+
+  application_logging:
+    enabled: true
+
+    forwarding:
+      enabled: true
+
+      context_data:
+        enabled: true
