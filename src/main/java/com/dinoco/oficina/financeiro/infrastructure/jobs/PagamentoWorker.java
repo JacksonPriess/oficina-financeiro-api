@@ -47,8 +47,8 @@ public class PagamentoWorker {
                 log.info("evento=pagamento_estado_persistido sagaId={} osId={} pagamentoId={} status={} estornado={}",
                         atualizado.sagaId(), atualizado.osId(), atualizado.id(), atualizado.status(), atualizado.estornoId() != null);
         } catch (RuntimeException e) {
-            // JpaTransactionManager não restaura o contexto de persistência com savepoints JDBC.
-            // A transação inteira já foi revertida; recuperação usa uma transação nova.
+            // JpaTransactionManager nÃ£o restaura o contexto de persistÃªncia com savepoints JDBC.
+            // A transaÃ§Ã£o inteira jÃ¡ foi revertida; recuperaÃ§Ã£o usa uma transaÃ§Ã£o nova.
             var p = selecionado.get();
             if (p == null) {
                 log.error("evento=pagamento_transacao_falha erroTipo={}", e.getClass().getSimpleName());
