@@ -68,6 +68,14 @@ jobs:
       - name: Executar testes e empacotar aplicação
         run: sh mvnw -B verify
 
+      - name: Publicar relatório de cobertura
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cobertura-oficina-financeiro-api
+          path: target/site/jacoco/
+          if-no-files-found: warn
+
   # ============================================================
   # CD
   # ============================================================
