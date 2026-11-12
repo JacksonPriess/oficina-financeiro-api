@@ -31,6 +31,10 @@
 		<java.version>21</java.version>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+		<sonar.organization>jacksonpriess</sonar.organization>
+		<sonar.projectKey>oficina-financeiro-api</sonar.projectKey>
+		<!-- Aponta para o relatório XML do JaCoCo -->
+		<sonar.coverage.jacoco.xmlReportPaths>target/site/jacoco/jacoco.xml</sonar.coverage.jacoco.xmlReportPaths>
 	</properties>
 	<dependencies>
 		<dependency>
