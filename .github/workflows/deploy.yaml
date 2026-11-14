@@ -65,8 +65,19 @@ jobs:
           python3 -m py_compile scripts/deploy-k8s.py
           kubectl kustomize k8s > /dev/null
 
-      - name: Executar testes e empacotar aplicação
-        run: sh mvnw -B verify
+      - name: Executar testes, empacotar aplicação e análise SonarQube
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        run: mvn clean verify org.sonarsource.scanner.maven:sonar-maven-plugin:sonar
+
+      - name: Publicar relatório de cobertura
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cobertura-oficina-financeiro-api
+          path: target/site/jacoco/
+          if-no-files-found: warn
 
   # ============================================================
   # CD

@@ -536,3 +536,12 @@ Para explorar os contratos disponíveis localmente, consultar:
 - [Swagger do Provedor Mock](http://localhost:8090/swagger-ui.html)
 
 ---
+
+### Cobertura de Testes — Melhoria Futura
+
+Foi criado no `pom.xml` o perfil Maven `cobertura-80`, que permite validar uma cobertura mínima de **80% das linhas de código**, utilizando o JaCoCo.
+
+O perfil pode ser executado manualmente com o comando:
+
+```bash
+./mvnw clean verify -Pcobertura-80
