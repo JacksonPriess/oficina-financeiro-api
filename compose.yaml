@@ -41,6 +41,9 @@ services:
     ports:
       - "127.0.0.1:5673:5672"
       - "127.0.0.1:15673:15672"
+    networks:
+      - default
+      - dinoco
     volumes:
       - financeiro_rabbit_data:/var/lib/rabbitmq
     healthcheck:
@@ -64,6 +67,9 @@ services:
       RABBITMQ_USERNAME: oficina
       RABBITMQ_PASSWORD: oficina-local
       FINANCEIRO_API_KEY: financeiro-local-key
+    networks:
+      - default
+      - dinoco
     depends_on:
       postgres-financeiro:
         condition: service_healthy
@@ -71,6 +77,11 @@ services:
         condition: service_healthy
       rabbitmq:
         condition: service_healthy
+
+networks:
+  dinoco:
+    external: true
+    name: dinoco-local
 
 volumes:
   financeiro_pg_data:
